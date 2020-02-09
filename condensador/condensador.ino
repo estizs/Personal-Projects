@@ -1,75 +1,77 @@
-/*  Calculador de capacidad de condensador
- *   Esti Zubimendi Solaguren
- *  Demonstrates use of RC time constants to measure the value of a capacitor
+/*  Calculador de capacidad de condensador y tiempo para carga
+ *   2020 Esti Zubimendi Solaguren
+ *   código obtenido de: https://www.arduino.cc/en/Tutorial/CapacitanceMeter
+ *  Se utiliza la fórmula TC = R * C para calcular el valor del condensador
  *
- * Theory   A capcitor will charge, through a resistor, in one time constant, defined as T seconds where
+ * Teoría:   Un condensador es un objeto con la capacidad de acumular carga eléctrica
+ *          Al producto RC se le llama constante de tiempo del circuito t  y equivale al tiempo que el condensador tardaría en cargarse.
+ *          También equivale al tiempo necesario para que el condensador se cargue con una carga equivalente al 63,2%.
  *    TC = R * C
  *
- *    TC = time constant period in seconds
- *    R = resistance in ohms
- *    C = capacitance in farads (1 microfarad (ufd) = .0000001 farad = 10^-6 farads )
+ *    TC = constante de tiempo en segundos
+ *    R = resistencia en ohms
+ *    C = capacidad en faradios ( 1 microfaradio = 0,0000001 faradios = 10^-6 faradios )
  *
- *    The capacitor's voltage at one time constant is defined as 63.2% of the charging voltage.
+ *    El voltaje del capacitador en un constante de tiempo (one time constant) se define como el 63,2% del voltaje de la corriente.
  *
- *  Hardware setup:
- *  Test Capacitor between common point and ground (positive side of an electrolytic capacitor  to common)
- *  Test Resistor between chargePin and common point
- *  220 ohm resistor between dischargePin and common point
- *  Wire between common point and analogPin (A/D input)
+ *  Configuración de Hardware:
+ *  Conectar el condensador que se quiera probar a un punto común y a la toma de tierra.
+ *  Una de las resistencias, de 10K ohms (resistencia de carga), al puerto digital 13 y al punto común.
+ *  La otra resistencia, de 220 ohms(resistecia de descarga), conectada al puerto ~11 y al punto común.
+ *  Conectar el puerto común con el puerto A0.
  */
 
-#define analogPin      0          // analog pin for measuring capacitor voltage
-#define chargePin      13         // pin to charge the capacitor - connected to one end of the charging resistor
-#define dischargePin   11         // pin to discharge the capacitor
-#define resistorValue  10000.0F   // change this to whatever resistor value you are using
-                                  // F formatter tells compliler it's a floating point value
+#define analogPin      0          // pin analógico para calcular el voltaje del condensador
+#define chargePin      13         // pin para cargar el condensador - conectado a uno de los extremos de la resistencia de carga
+#define dischargePin   11         // pin para descargar el condensador
+#define resistorValue  10000.0F   // valor de la resistencia que se está utilizando en este caso 10K ohms
+                                  // la F le dice al programa que el número es un float
 
 unsigned long startTime;
 unsigned long elapsedTime;
-float microFarads;                // floating point variable to preserve precision, make calculations
+float microFarads;                // variables de tipo float para preservar la precisión
 float nanoFarads;
 
 void setup(){
-  pinMode(chargePin, OUTPUT);     // set chargePin to output
+  pinMode(chargePin, OUTPUT);     // ponemos chargePin a OUTPUT
   digitalWrite(chargePin, LOW);  
 
-  Serial.begin(9600);             // initialize serial transmission for debugging
+  Serial.begin(9600);             // conexión entre la placa y el ordenador, a velocidad 9600 bits/segundo
 }
 
 void loop(){
-  digitalWrite(chargePin, HIGH);  // set chargePin HIGH and capacitor charging
+  digitalWrite(chargePin, HIGH);  // ponemos chargePin a HIGH para que cargue el condensador
   startTime = millis();
 
-  while(analogRead(analogPin) < 648){       // 647 is 63.2% of 1023, which corresponds to full-scale voltage
+  while(analogRead(analogPin) < 648){       // 647 es el 63.2% de 1023, que corresponde al máximo voltaje posible
   }
 
   elapsedTime= millis() - startTime;
- // convert milliseconds to seconds ( 10^-3 ) and Farads to microFarads ( 10^6 ),  net 10^3 (1000)  
+ // convertir milisegundos a segundos ( 10^-3 ) y Faradios a microFaradios ( 10^6 ),  net 10^3 (1000)  
   microFarads = ((float)elapsedTime / resistorValue) * 1000;  
-  Serial.print(elapsedTime);       // print the value to serial port
-  Serial.print(" mS    ");         // print units and carriage return
+  Serial.print(elapsedTime);       // imprimimos el valor en la consola
+  Serial.print(" mS    ");         // imprimimos la magnitud
 
 
   if (microFarads > 1){
-    Serial.print((long)microFarads);       // print the value to serial port
-    Serial.println(" microFarads");         // print units and carriage return
+    Serial.print((long)microFarads);       // volvemos a imprimir el valor en la consola y su magnitud
+    Serial.println(" microFarads");        
   }
   else
   {
-    // if value is smaller than one microFarad, convert to nanoFarads (10^-9 Farad).
-    // This is  a workaround because Serial.print will not print floats
+    // si el valor es menor que un microFaradio, convertir a nanoFaradios (10^-9 faradios)
 
-    nanoFarads = microFarads * 1000.0;      // multiply by 1000 to convert to nanoFarads (10^-9 Farads)
-    Serial.print((long)nanoFarads);         // print the value to serial port
-    Serial.println(" nanoFarads");          // print units and carriage return
+    nanoFarads = microFarads * 1000.0;      // multiplicar por 1000 para convertir a nanoFaradios (10^-9)
+    Serial.print((long)nanoFarads);         // volvemos a imprimir el valor en la consola y su magnitud
+    Serial.println(" nanoFarads");      
   }
 
-  /* dicharge the capacitor  */
-  digitalWrite(chargePin, LOW);             // set charge pin to  LOW
-  pinMode(dischargePin, OUTPUT);            // set discharge pin to output
-  digitalWrite(dischargePin, LOW);          // set discharge pin LOW
-  while(analogRead(analogPin) > 0){         // wait until capacitor is completely discharged
+  /* descargar el condensador  */
+  digitalWrite(chargePin, LOW);             // ponemos chargePin a LOW
+  pinMode(dischargePin, OUTPUT);            // ponemos dischargePin a OUTPUT
+  digitalWrite(dischargePin, LOW);          // ponemos dischargePin a LOW
+  while(analogRead(analogPin) > 0){         // esperar a que el condensador esté completamente descargado
   }
 
-  pinMode(dischargePin, INPUT);            // set discharge pin back to input
+  pinMode(dischargePin, INPUT);            // volvemos a poner el dischargePin a INPUT de nuevo
 }
